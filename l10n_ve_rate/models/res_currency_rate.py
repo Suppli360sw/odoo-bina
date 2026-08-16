@@ -48,7 +48,11 @@ class ResCurrencyRate(models.Model):
         if not rate:
             return {}
 
-        vef_id = self.env.company.currency_id.id
+        # Suppli360: la tasa mostrada debe ser siempre "Bs por USD". Con base
+        # USD y alterna VEF (setup invertido), comparar contra la moneda de la
+        # compañía invierte la tasa visible (~0,0013); se compara contra VEF.
+        vef = self.env.ref("base.VEF", raise_if_not_found=False)
+        vef_id = vef.id if vef else self.env.company.currency_id.id
         if vef_id == foreign_currency_id:
             return {
                 "foreign_rate": rate.company_rate,
