@@ -473,6 +473,23 @@ class SaleOrder(models.Model):
                 }
             )
 
+    def copy_data(self, default=None):
+        # Suppli360: al duplicar (o versionar) una cotización, la copia debe nacer
+        # con la tasa BCV de SU fecha (date_order nueva = hoy), no arrastrar la
+        # tasa del documento original. Sin esto, una copia de una cotización vieja
+        # hereda una tasa obsoleta con fecha de hoy y los totales Bs quedan mal.
+        # Si el caller pasa la tasa explícitamente en default, se respeta.
+        default = dict(default or {})
+        vals_list = super().copy_data(default=default)
+        for vals in vals_list:
+            if "foreign_rate" not in default:
+                vals.pop("foreign_rate", None)
+            if "foreign_inverse_rate" not in default:
+                vals.pop("foreign_inverse_rate", None)
+            if "manually_set_rate" not in default:
+                vals.pop("manually_set_rate", None)
+        return vals_list
+
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
