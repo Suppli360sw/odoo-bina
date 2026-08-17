@@ -79,8 +79,15 @@ class SaleOrderLine(models.Model):
         "order_id.date_order",
         "currency_id",
         "company_id",
+        "foreign_inverse_rate",
     )
     def _compute_foreign_price(self):
+        # Suppli360: mismo criterio que account.move.line._compute_foreign_price
+        # (l10n_ve_accountant): precio foráneo SIN redondear a los decimales de la
+        # moneda y usando la tasa del documento (foreign_inverse_rate), no la tasa
+        # diaria vía _convert(). _convert() redondeaba el unitario a 2 decimales y,
+        # multiplicado por la cantidad, desviaba el subtotal Bs respecto a
+        # total USD × tasa (y respecto a la factura, que sí calcula sin redondear).
         for line in self:
 
             order_date = line.order_id.date_order or fields.Date.today()
@@ -94,12 +101,7 @@ class SaleOrderLine(models.Model):
                 continue
 
             if line_currency.id == company_currency.id:
-                line.foreign_price = line_currency._convert(
-                    line.price_unit,
-                    foreign_currency,
-                    line.company_id,
-                    order_date,
-                )
+                line.foreign_price = line.price_unit * line.foreign_inverse_rate
                 continue
 
             if line_currency.id == foreign_currency.id:
@@ -111,6 +113,7 @@ class SaleOrderLine(models.Model):
                 foreign_currency,
                 line.company_id,
                 order_date,
+                round=False,
             )
 
     @api.depends("product_uom_qty", "foreign_price", "discount")
