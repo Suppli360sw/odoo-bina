@@ -122,8 +122,18 @@ class AccountMove(models.Model):
             self.invoice_date = fields.Date.context_today(self)
 
     def action_post(self):
-        
+        # Escape para documentos historicos migrados. La validacion de abajo
+        # exige impuesto en toda linea, pero las facturas que vinieron de la
+        # base anterior son recibos de venta SIN imposicion de impuesto: se
+        # pueden despublicar y luego NO se dejan republicar, ni siquiera para
+        # devolverlas a su estado original. Con este contexto se pueden
+        # corregir y volver a publicar tal cual estaban.
+        # Uso previsto: mantenimiento por RPC, nunca el flujo normal de la UI.
+        saltar = self.env.context.get("skip_tax_required_check", False)
+
         for record in self:
+            if saltar:
+                continue
             if record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
                 for line in record.invoice_line_ids:
                     if line.display_type in ("line_section", "line_note"):

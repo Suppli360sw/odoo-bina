@@ -215,7 +215,14 @@ class SaleOrder(models.Model):
                     "base_amount_foreign_currency", 0
                 )
 
-    @api.depends("tax_totals", "currency_id", "date_order", "amount_total")
+    @api.depends(
+        "order_line.foreign_subtotal",
+        "order_line.price_total",
+        "tax_totals",
+        "currency_id",
+        "date_order",
+        "amount_total",
+    )
     def _compute_foreign_total_billed(self):
         """
         Compute the foreign total billed of the order
@@ -231,7 +238,14 @@ class SaleOrder(models.Model):
                 "total_amount_foreign_currency", 0
             )
 
-    @api.depends("tax_totals", "currency_id", "date_order", "amount_untaxed")
+    @api.depends(
+        "order_line.foreign_subtotal",
+        "order_line.price_subtotal",
+        "tax_totals",
+        "currency_id",
+        "date_order",
+        "amount_untaxed",
+    )
     def _compute_foreign_untaxed_total(self):
         """
         Compute the foreign untaxed total of the order
