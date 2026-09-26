@@ -351,8 +351,16 @@ class SaleOrder(models.Model):
                 
         return res
 
+    # Suppli360: tax_totals trae también los montos en Bs, que salen del
+    # foreign_price de cada línea. Sin depender de él, un cambio SOLO del
+    # precio en Bs (p.ej. al fijarse foreign_rate_date después de crear la
+    # línea) no invalidaba este cómputo no almacenado: foreign_total_billed /
+    # foreign_untaxed_total se recalculaban leyendo el tax_totals viejo de la
+    # caché y guardaban 0 (cotizaciones sin el cuadro en Bs).
     @api.depends(
         "order_line.price_subtotal",
+        "order_line.foreign_price",
+        "order_line.foreign_subtotal",
         "currency_id",
         "company_id",
         "payment_term_id",
