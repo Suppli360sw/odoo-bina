@@ -25,7 +25,12 @@ class AccountTax(models.Model):
         active_id = self.env.context.get('active_id')
         
         record = False
-        if active_model and active_id:
+        # Solo los documentos con totales pueden venir del contexto. Al abrir
+        # Ventas/Compras desde la ficha de un contacto el cliente web deja
+        # active_model='res.partner' en el contexto: tomarlo como el documento
+        # dejaba los montos en moneda alterna en 0 (cotizaciones sin total en
+        # Bs). En ese caso el documento se deduce de base_lines, más abajo.
+        if active_model in ('account.move', 'sale.order', 'purchase.order') and active_id:
             if isinstance(active_id, api.NewId):
                 active_id = active_id.origin
             if active_id:
